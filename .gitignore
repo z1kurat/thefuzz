@@ -43,3 +43,6 @@ __pycache__
 
 # vscode
 .vscode/
+
+# env
+.env.dev
