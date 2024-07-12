@@ -112,7 +112,7 @@ def extractWithoutOrder(
     processor: t.Optional[_Processor] = ...,
     scorer: _Scorer = ...,
     score_cutoff: t.Optional[float] = ...,
-) -> t.Iterator[_Result, None, None]: ...
+) -> t.Iterator[_Result]: ...
 
 
 def extractWithoutOrder(
