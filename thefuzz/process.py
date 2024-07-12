@@ -27,10 +27,16 @@ def _get_processor(processor, scorer):
     function passed into process.* while rapidfuzz only runs the one passed into
     process.*. This function wraps the processor to mimic this behavior
     """
-    if scorer not in (fuzz.WRatio, fuzz.QRatio,
-                      fuzz.token_set_ratio, fuzz.token_sort_ratio,
-                      fuzz.partial_token_set_ratio, fuzz.partial_token_sort_ratio,
-                      fuzz.UWRatio, fuzz.UQRatio):
+    if scorer not in (
+        fuzz.WRatio,
+        fuzz.QRatio,
+        fuzz.token_set_ratio,
+        fuzz.token_sort_ratio,
+        fuzz.partial_token_set_ratio,
+        fuzz.partial_token_sort_ratio,
+        fuzz.UWRatio,
+        fuzz.UQRatio,
+    ):
         return processor
 
     force_ascii = scorer not in [fuzz.UWRatio, fuzz.UQRatio]
@@ -70,6 +76,7 @@ def _get_scorer(scorer):
     rapidfuzz scorers require the score_cutoff argument to be available
     This generates a compatible wrapper function
     """
+
     def wrapper(s1, s2, score_cutoff=0):
         return scorer(s1, s2)
 
@@ -79,9 +86,11 @@ def _get_scorer(scorer):
 def _preprocess_query(query, processor):
     processed_query = processor(query) if processor else query
     if len(processed_query) == 0:
-        _logger.warning("Applied processor reduces input query to empty string, "
-                        "all comparisons will have score 0. "
-                        f"[Query: \'{query}\']")
+        _logger.warning(
+            "Applied processor reduces input query to empty string, "
+            "all comparisons will have score 0. "
+            f"[Query: '{query}']"
+        )
 
     return processed_query
 
@@ -93,8 +102,7 @@ def extractWithoutOrder(
     processor: t.Optional[_Processor] = ...,
     scorer: _Scorer = ...,
     score_cutoff: t.Optional[float] = ...,
-) -> t.Iterator[_MappedResult[_T]]:
-    ...
+) -> t.Iterator[_MappedResult[_T]]: ...
 
 
 @t.overload
@@ -104,8 +112,7 @@ def extractWithoutOrder(
     processor: t.Optional[_Processor] = ...,
     scorer: _Scorer = ...,
     score_cutoff: t.Optional[float] = ...,
-) -> t.Iterator[_Result, None, None]:
-    ...
+) -> t.Iterator[_Result, None, None]: ...
 
 
 def extractWithoutOrder(
@@ -166,10 +173,11 @@ def extractWithoutOrder(
 
     query = _preprocess_query(query, processor)
     it = rprocess.extract_iter(
-        query, choices,
+        query,
+        choices,
         processor=_get_processor(processor, scorer),
         scorer=_get_scorer(scorer),
-        score_cutoff=score_cutoff
+        score_cutoff=score_cutoff,
     )
 
     for choice, score, key in it:
@@ -186,8 +194,7 @@ def extract(
     processor: t.Optional[_Processor] = ...,
     scorer: _Scorer = ...,
     limit: t.Optional[float] = ...,
-) -> t.List[_MappedResult[_T]]:
-    ...
+) -> t.List[_MappedResult[_T]]: ...
 
 
 @t.overload
@@ -197,8 +204,7 @@ def extract(
     processor: t.Optional[_Processor] = ...,
     scorer: _Scorer = ...,
     limit: t.Optional[float] = ...,
-) -> t.List[_Result]:
-    ...
+) -> t.List[_Result]: ...
 
 
 def extract(
@@ -264,8 +270,7 @@ def extractBests(
     scorer: _Scorer = ...,
     score_cutoff: t.Optional[float] = ...,
     limit: t.Optional[float] = ...,
-) -> t.List[_MappedResult[_T]]:
-    ...
+) -> t.List[_MappedResult[_T]]: ...
 
 
 @t.overload
@@ -276,8 +281,7 @@ def extractBests(
     scorer: _Scorer = ...,
     score_cutoff: t.Optional[float] = ...,
     limit: t.Optional[int] = ...,
-) -> t.List[_Result]:
-    ...
+) -> t.List[_Result]: ...
 
 
 def extractBests(
@@ -312,11 +316,12 @@ def extractBests(
 
     query = _preprocess_query(query, processor)
     results = rprocess.extract(
-        query, choices,
+        query,
+        choices,
         processor=_get_processor(processor, scorer),
         scorer=_get_scorer(scorer),
         score_cutoff=score_cutoff,
-        limit=limit
+        limit=limit,
     )
 
     for i, (choice, score, key) in enumerate(results):
@@ -335,8 +340,7 @@ def extractOne(
     procprocessor: t.Optional[_Processor] = ...,
     scorer: _Scorer = ...,
     score_cutoff: t.Optional[float] = ...,
-) -> t.Optional[_MappedResult[_T]]:
-    ...
+) -> t.Optional[_MappedResult[_T]]: ...
 
 
 @t.overload
@@ -346,8 +350,7 @@ def extractOne(
     procprocessor: t.Optional[_Processor] = ...,
     scorer: _Scorer = ...,
     score_cutoff: t.Optional[float] = ...,
-) -> t.Optional[_Result]:
-    ...
+) -> t.Optional[_Result]: ...
 
 
 def extractOne(
@@ -383,10 +386,11 @@ def extractOne(
 
     query = _preprocess_query(query, processor)
     res = rprocess.extractOne(
-        query, choices,
+        query,
+        choices,
         processor=_get_processor(processor, scorer),
         scorer=_get_scorer(scorer),
-        score_cutoff=score_cutoff
+        score_cutoff=score_cutoff,
     )
 
     if res is None:
@@ -402,9 +406,11 @@ def extractOne(
 
 _TC = t.TypeVar("_TC", bound=t.Collection[str])
 
+
 def dedupe(
     contains_dupes: _TC,
     threshold: float = 70,
+    processor: t.Optional[_Processor] = default_processor,
     scorer: _Scorer = fuzz.token_set_ratio,
 ) -> t.Union[t.List[str], _TC]:
     """
@@ -422,6 +428,7 @@ def dedupe(
         contains_dupes: A list of strings that we would like to dedupe.
         threshold: the numerical value (0,100) point at which we expect to find duplicates.
             Defaults to 70 out of 100
+        processor: processor
         scorer: Optional function for scoring matches between the query and
             an individual processed choice. This should be a function
             of the form f(query, choice) -> int.
@@ -437,7 +444,14 @@ def dedupe(
     """
     deduped = set()
     for item in contains_dupes:
-        matches = extractBests(item, contains_dupes, scorer=scorer, score_cutoff=threshold, limit=None)
+        matches = extractBests(
+            item,
+            contains_dupes,
+            scorer=scorer,
+            processor=processor,
+            score_cutoff=threshold,
+            limit=None,
+        )
         deduped.add(max(matches, key=lambda x: (len(x[0]), x[0]))[0])
 
     return list(deduped) if len(deduped) != len(contains_dupes) else contains_dupes
