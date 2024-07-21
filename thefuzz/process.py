@@ -452,6 +452,17 @@ def dedupe(
             score_cutoff=threshold,
             limit=None,
         )
-        deduped.add(max(matches, key=lambda x: (len(x[0]), x[0]))[0])
+        element = max(matches, key=lambda x: (len(x[0]), x[0]))[0]
+
+        if hasattr(element, "duplication_count"):
+            element_duplication_count: int = element.duplication_count
+            element.duplication_count = -1
+
+            for math in matches:
+                element.duplication_count += math[0].duplication_count + 1
+
+            element.duplication_count += element_duplication_count
+
+        deduped.add(element)
 
     return list(deduped) if len(deduped) != len(contains_dupes) else contains_dupes
